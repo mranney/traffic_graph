@@ -1,55 +1,82 @@
-var graph = Raphael('graph');
-
-var c = graph.circle(100, 100, 50).attr({
-    fill: "hsb(.8, 1, 1)",
-    stroke: "none",
-    opacity: .5
-});
-var start = function () {
-    // storing original coordinates
-    this.ox = this.attr("cx");
-    this.oy = this.attr("cy");
-    this.attr({opacity: 1});
-},
-move = function (dx, dy) {
-    // move will be called with dx and dy
-    this.attr({cx: this.ox + dx, cy: this.oy + dy});
-},
-up = function () {
-    // restoring state
-    this.attr({opacity: .5});
-};
-c.drag(move, start, up);
-
-var t = graph.text(100, 10, "Graph Data");
-
-var log_elem = document.getElementById('log');
-
-var socket = new WebSocket("ws://" + window.location.host);
+var log_elem = document.getElementById('log'),
+    socket = new WebSocket("ws://" + window.location.host),
+    dns_cache = {}, sessions = {};
 
 socket.addEventListener('open', function (event) {
     console.log("WS open");
-    log_elem.innerHTML += 'Connected.<br />';
+    log_elem.style.background = "rgb(128,255,128)";
+    log_elem.innerText = 'WebSocket Connected';
 });
 
+function draw_blob(html) {
+    var elem = document.createElement('div');
+    elem.className = "animated_box";
+    elem.style.left = (window.outerWidth - 200) + "px";
+    elem.style.top = Math.round(Math.random() * (window.outerHeight - 250)) + "px";
+    elem.innerHTML = html;
+    elem.addEventListener('webkittransitionend', function () {
+        console.log("removing that shit!");
+        document.body.removeChild(elem);
+    }, false);
+    document.body.appendChild(elem);
+    setTimeout(function () {
+        elem.style.left = "200px";
+    }, 10);
+}
+
+function parse_key(key) {
+    var addr_pairs = key.split('-', 2);
+    return {
+        src: addr_pairs[0],
+        dst: addr_pairs[1]
+    };
+}
+
 socket.addEventListener('message', function (event) {
-    console.log("WS message: " + event.data);
+//    console.log("WS message: " + event.data);
+    var obj;
 
     try {
-        var obj = JSON.parse(event.data);
-        log_elem.innerHTML += event.data + "<br />";
+        obj = JSON.parse(event.data);
     } catch (err) {
-        log_elem.innerHTML += "Error parsing JSON response<br />";
+        log_elem.innerText = "Error parsing JSON response";
+    }
+    
+    try {
+        switch (obj.event) {
+        case "http_request":
+            draw_blob(obj.event + "<br />" + parse_key(obj.key).src + "<br />" + obj.method + " " + obj.url + "<br />");
+            // todo - add headers
+            break;
+        case "http_request_body":
+            break;
+        case "http_request_complete":
+            break;
+        case "http_response":
+            break;
+        case "http_response_body":
+            break;
+        case "http_response_complete":
+            break;
+        default:
+            console.log("Don't know how to handle event type " + obj.event);
+        }
+    } catch (err) {
+        log_elem.innerText = "Error dispatching event: " + err;
     }
 });
 
 socket.addEventListener('close', function (event) {
     console.log("WS close");
+    log_elem.style.background = "rgb(170,170,170)";
+    log_elem.innerText = 'WebSocket closed';
+
     console.log(event);
 });
 
 socket.addEventListener('error', function (event) {
     console.log("WS error");
-    console.log(event);
+    log_elem.style.background = "rgb(255,128,128)";
+    log_elem.innerText = 'WebSocket error';
 });
 

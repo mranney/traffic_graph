@@ -3,30 +3,36 @@
 <head>
     <title>Traffic Graph</title>
     <style>
-        #graph {
-            width: 600px;
-            height: 400px;
+        .animated_box {
+            position: absolute;
+            border: 1px solid black;
+            background: rgb(128,200,128);
+            -webkit-border-radius: 3px;
+            width: 150px;
+            height: 125px;
+            -webkit-transition-property: left, top;
+            -webkit-transition-duration: 3s;
+            -webkit-transition-timing-function: ease-in;
         }
         
         #log {
-            width: 600px;
-            height: 400px;
+            font-family: Helvetica, sans-serif;
+            font-size: 14px;
+            -webkit-border-radius: 5px;
+            padding: 5px;
+            width: 200px;
+            height: 17px;
+            text-align: center;
             background: rgb(128,128,128);
-            border; 1px solid black;
+            border: 1px solid black;
         }
     </style>
 </head>
 
 <body>
-Here is a graph:
 
-<div id="graph"></div>
+<div id="log">Connecting to WebSocket server...</div>
 
-That is amazing.
-
-<div id="log"></div>
-
-<script src="raphael-min.js"></script>
 <script src="grapher.js"></script>
 </body>
 </html>
