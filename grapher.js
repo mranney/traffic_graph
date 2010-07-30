@@ -8,22 +8,6 @@ socket.addEventListener('open', function (event) {
     log_elem.innerText = 'WebSocket Connected';
 });
 
-function draw_blob(html) {
-    var elem = document.createElement('div');
-    elem.className = "animated_box";
-    elem.style.left = (window.outerWidth - 200) + "px";
-    elem.style.top = Math.round(Math.random() * (window.outerHeight - 250)) + "px";
-    elem.innerHTML = html;
-    elem.addEventListener('webkittransitionend', function () {
-        console.log("removing that shit!");
-        document.body.removeChild(elem);
-    }, false);
-    document.body.appendChild(elem);
-    setTimeout(function () {
-        elem.style.left = "200px";
-    }, 10);
-}
-
 function parse_key(key) {
     var addr_pairs = key.split('-', 2);
     return {
@@ -32,8 +16,146 @@ function parse_key(key) {
     };
 }
 
+function dns_lookup(addr) {
+    var parts = addr.split(':', 2);
+    if (dns_cache[parts[0]]) {
+        return dns_cache[parts[0]] + ":" + parts[1];
+    }
+    return null;
+}
+
+function new_request(obj) {
+    var addrs = parse_key(obj.key), requests, session_elem, request_elem, row, col1, col2;
+
+    if (! sessions[obj.key]) {
+        session_elem = document.createElement('table');
+        session_elem.className = "session";
+        row = session_elem.insertRow(0);
+        col1 = row.insertCell(0);
+        col2 = row.insertCell(1);
+        col1.className = "src_addr";
+        col1.innerHTML = dns_lookup(addrs.src) || addrs.src;
+        col2.className = "requests";
+        document.getElementById('sessions').appendChild(session_elem);
+        sessions[obj.key] = {
+            requests: [],
+            elem: session_elem
+        }
+    } else {
+        session_elem = sessions[obj.key].elem;
+    }
+    requests = sessions[obj.key].requests;
+
+    request_elem = document.createElement('div');
+    request_elem.className = "request start";
+    request_elem.innerHTML = obj.method + " " + obj.url + " " + (obj.headers["User-Agent"] || obj.headers["Upgrade"] || "");
+
+    session_elem.getElementsByClassName('requests')[0].appendChild(request_elem);
+    
+    requests.push({
+        url: obj.url,
+        method: obj.method,
+        req_headers: obj.headers,
+        elem: request_elem
+    });
+}
+
+function request_complete(obj) {
+    var addrs = parse_key(obj.key),
+        session = sessions[obj.key], elem;
+
+    if (typeof session !== 'object') {
+        console.log("Couldn't find session " + obj.key + " in list, ignoring.");
+        return;
+    }
+
+    elem = session.requests[session.requests.length - 1].elem;
+    if (! elem) {
+        console.log("missing elem for " + obj.key);
+        return;
+    }
+    elem.className = "request sent";
+}
+
+function response_start(obj) {
+    var addrs = parse_key(obj.key),
+        session = sessions[obj.key],
+        response_elem;
+
+    if (typeof session !== 'object') {
+        console.log("Couldn't find session " + obj.key + " in list, ignoring.");
+        return;
+    }
+
+    session.requests[session.requests.length - 1].elem.className = "request";
+
+    response_elem = document.createElement('div');
+    response_elem.className = "response start";
+    response_elem.innerHTML = obj.status_code + " " + obj.headers['Content-Type'];
+
+    session.requests[session.requests.length - 1].elem.parentElement.appendChild(response_elem);
+}
+
+function response_body_chunk(obj) {
+    var addrs = parse_key(obj.key),
+        session = sessions[obj.key],
+        response_elem;
+
+    if (typeof session !== 'object') {
+        console.log("Couldn't find session " + obj.key + " in list, ignoring.");
+        return;
+    }
+
+    response_elem = session.requests[session.requests.length - 1].elem.nextSibling;
+    response_elem.className = "response data";
+    response_elem.innerHTML += " [data " + obj.data_length + "] ";
+}
+
+function response_complete(obj) {
+    var addrs = parse_key(obj.key),
+        session = sessions[obj.key],
+        response_elem;
+
+    if (typeof session !== 'object') {
+        console.log("Couldn't find session " + obj.key + " in list, ignoring.");
+        return;
+    }
+
+    response_elem = session.requests[session.requests.length - 1].elem.nextSibling;
+    response_elem.className = "response";
+    response_elem.innerHTML += " complete";
+}
+
+function reverse_map(obj) {
+    dns_cache[obj.name] = obj.value;
+    console.log("Adding " + obj.name + " to dns cache: " + obj.value);
+}
+
+function websocket_start(obj) {
+    var addrs = parse_key(obj.key),
+        session = sessions[obj.key], elem;
+
+    if (typeof session !== 'object') {
+        console.log("Couldn't find session " + obj.key + " in list, ignoring.");
+        return;
+    }
+
+    elem = session.requests[session.requests.length - 1].elem;
+    if (! elem) {
+        console.log("missing elem for " + obj.key);
+        return;
+    }
+
+    session.requests[session.requests.length - 1].elem.className = "request";
+
+    response_elem = document.createElement('div');
+    response_elem.className = "websocket start";
+    response_elem.innerHTML = "WebSocket handshake";
+
+    session.requests[session.requests.length - 1].elem.parentElement.appendChild(response_elem);
+}
+
 socket.addEventListener('message', function (event) {
-//    console.log("WS message: " + event.data);
     var obj;
 
     try {
@@ -45,24 +167,34 @@ socket.addEventListener('message', function (event) {
     try {
         switch (obj.event) {
         case "http_request":
-            draw_blob(obj.event + "<br />" + parse_key(obj.key).src + "<br />" + obj.method + " " + obj.url + "<br />");
-            // todo - add headers
+            new_request(obj);
             break;
         case "http_request_body":
             break;
         case "http_request_complete":
+            request_complete(obj);
             break;
         case "http_response":
+            response_start(obj);
             break;
         case "http_response_body":
+            response_body_chunk(obj);
             break;
         case "http_response_complete":
+            response_complete(obj);
+            break;
+        case "reverse_map":
+            reverse_map(obj);
+            break;
+        case "websocket_upgrade":
+            websocket_start(obj);
             break;
         default:
             console.log("Don't know how to handle event type " + obj.event);
         }
     } catch (err) {
         log_elem.innerText = "Error dispatching event: " + err;
+        throw err;
     }
 });
 

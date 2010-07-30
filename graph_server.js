@@ -82,20 +82,27 @@ function upgrade_client(request, socket, key_3) {
             console.log("Got WS chunk: " + chunk.toString('utf8', 1, (chunk.length - 1)));
         } catch (err) {
             console.log("Exception in data chunk handler: " + err.stack);
-            socket.end();
+            cleanup_socket(socket);
         }
     });
 
-    socket.on('end', function (err) {
-        var socket_pos = ws_waiters.indexOf(socket);
-        console.log("Got WebSocket end: " + err);
-        socket.end();
-        if (socket_pos > -1) {
-            ws_waiters.splice(socket_pos, 1);
-        } else {
-            console.log("WebSocket end: Couldn't find socket in list");
-        }
+    socket.on('close', function (err) {
+        console.log("Got WebSocket close: " + err);
+        cleanup_socket(socket);
     });
+
+    socket.on('end', function (err) {
+        console.log("Got WebSocket end: " + err);
+        cleanup_socket(socket);
+    });
+}
+
+function cleanup_socket(socket) {
+    var socket_pos = ws_waiters.indexOf(socket);
+    socket.end();
+    if (socket_pos > -1) {
+        ws_waiters.splice(socket_pos, 1);
+    }
 }
 
 function lookup_mime_type(file_name) {
@@ -226,11 +233,15 @@ tcp_tracker = new node.pcap.TCP_tracker();
 dns_cache = node.pcap.dns_cache;
 
 tcp_tracker.on('reverse', function (name, value) {
-    send_to_waiters({
-        event: "reverse_map",
-        name: name,
-        value: value
-    });
+    if (value) {
+        send_to_waiters({
+            event: "reverse_map",
+            name: name,
+            value: value
+        });
+    } else {
+        console.log("reverse event for " + name + " with no value");
+    }
 });
 
 tcp_tracker.on('http_request', function (session, http) {
@@ -240,7 +251,6 @@ tcp_tracker.on('http_request', function (session, http) {
         session.http_request_count = 1;
     }
     
-    console.log(node.sys.inspect(session));
     send_to_waiters({
         event: "http_request",
         key: session.key,
@@ -300,12 +310,31 @@ tcp_tracker.on('websocket_upgrade', function (session, http) {
 });
 
 tcp_tracker.on('websocket_message', function (session, dir, message) {
-    send_to_waiters({
-        event: "websocket_message",
-        key: session.key,
-        dir: dir,
-        message: message
-    });
+    // var message_obj = JSON.parse(message), key_parts, new_message;
+    // 
+    // console.log("considering: " + message);
+    // 
+    // if (message_obj.key) {
+    //     key_parts = message_obj.key.split('-', 2);
+    // }
+    // 
+    // new_message = JSON.stringify({
+    //     event: "websocket_message",
+    //     key: session.key,
+    //     data_length: message.length
+    // });
+    // 
+    // ws_waiters.forEach(function (socket) {
+    //     var from_addr = socket.remoteAddress + ":" + socket.remotePort;
+    //     if ( !key_parts || (from_addr !== key_parts[0])) {
+    //         console.log("Sending to " + from_addr + ": " + new_message);
+    //         socket.write(ws_start_byte);
+    //         socket.write(new_message, 'utf8');
+    //         socket.write(ws_stop_byte);
+    //     } else {
+    //         console.log("Skipping WS message to self");
+    //     }
+    // });
 });
 
 // listen for packets, decode them, and feed TCP to the tracker
