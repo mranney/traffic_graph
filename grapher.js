@@ -76,8 +76,8 @@ status_lookup = (function () {
 function parse_key(key) {
     var addr_pairs = key.split('-', 2);
     return {
-        src: addr_pairs[0],
-        dst: addr_pairs[1]
+        src: addr_pairs[1],
+        dst: addr_pairs[0]
     };
 }
 
@@ -109,7 +109,8 @@ function new_request(obj) {
         col1 = row.insertCell(0);
         col2 = row.insertCell(1);
         col1.className = "src_col";
-        col1.innerHTML = dns_lookup(addrs.src) || addrs.src;
+        console.log(addrs);
+        col1.innerHTML = "<div>src: " + (dns_lookup(addrs.src) || addrs.src) + "</div><div>dst: " + (dns_lookup(addrs.dst) || addrs.dst) + "</div>";
         col2.className = "req_col";
         tmp = document.getElementById('sessions');
         tmp.insertBefore(session_elem, tmp.firstChild);
@@ -154,13 +155,14 @@ function request_complete(obj) {
 }
 
 function response_start(obj) {
-    var session = sessions[obj.key],
-        request = session.requests[session.requests.length - 1];
+    var session = sessions[obj.key], request;
 
     if (typeof session !== 'object') {
         console.log("Couldn't find session " + obj.key + " in list, ignoring.");
         return;
     }
+
+    request = session.requests[session.requests.length - 1];
 
     request.elem.innerHTML += '<div class="response_code">' + obj.status_code + " " + status_lookup(obj.status_code) + '</div>';
     if (obj.status_code === 304 || obj.status_code == 204 || obj.status_code === 302 || request.method === "HEAD") {
@@ -180,13 +182,14 @@ function response_start(obj) {
 }
 
 function response_body_chunk(obj) {
-    var session = sessions[obj.key],
-        request = session.requests[session.requests.length - 1];
+    var session = sessions[obj.key], request;
 
     if (typeof session !== 'object') {
         console.log("Couldn't find session " + obj.key + " in list, ignoring.");
         return;
     }
+    
+    request = session.requests[session.requests.length - 1];
 
     request.elem.className = "response data";
     request.response_bytes += obj.data_length;
@@ -196,13 +199,14 @@ function response_body_chunk(obj) {
 }
 
 function response_complete(obj) {
-    var session = sessions[obj.key],
-        request = session.requests[session.requests.length - 1];
+    var session = sessions[obj.key], request;
 
     if (typeof session !== 'object') {
         console.log("Couldn't find session " + obj.key + " in list, ignoring.");
         return;
     }
+
+    request = session.requests[session.requests.length - 1];
 
     request.elem.className = "response";
     request.response_bytes = obj.body_len;
@@ -255,6 +259,8 @@ if (socket) {
         } catch (err) {
             log_elem.innerText = "Error parsing JSON response";
         }
+
+        console.log(event.data);
     
         try {
             switch (obj.event) {
