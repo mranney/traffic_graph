@@ -8,7 +8,7 @@ var node = {
         pcap: require('pcap')
     },
     ws_start_byte, ws_stop_byte, ws_server, ws_waiters = [],
-    pcap_session, dns_cache, tcp_tracker, http_server;
+    pcap_session, tcp_tracker, http_server;
 
 function upgrade_client(request, socket, key_3) {
     try {
@@ -70,6 +70,7 @@ function upgrade_client(request, socket, key_3) {
             ].join('\r\n'), 'utf8');
         }
 
+        socket.setTimeout(60 * 60 * 1000); // allow WS sockets to hang out for an hour
         console.log(request.connection.remoteAddress + " WebSocket upgrade");
         ws_waiters.push(socket);
     } catch (err) {
@@ -230,12 +231,11 @@ server.listen(80);
 
 pcap_session = node.pcap.createSession(process.argv[2], process.argv[3]);
 tcp_tracker = new node.pcap.TCP_tracker();
-dns_cache = node.pcap.dns_cache;
 
 tcp_tracker.on('reverse', function (name, value) {
     if (value) {
         send_to_waiters({
-            event: "reverse_map",
+            event: "reverse map",
             name: name,
             value: value
         });
@@ -244,7 +244,7 @@ tcp_tracker.on('reverse', function (name, value) {
     }
 });
 
-tcp_tracker.on('http_request', function (session, http) {
+tcp_tracker.on('http request', function (session, http) {
     if (session.http_request_count) {
         session.http_request_count += 1;
     } else {
@@ -252,7 +252,7 @@ tcp_tracker.on('http_request', function (session, http) {
     }
     
     send_to_waiters({
-        event: "http_request",
+        event: "http request",
         key: session.key,
         method: http.request.method,
         url: http.request.url,
@@ -260,56 +260,48 @@ tcp_tracker.on('http_request', function (session, http) {
     });
 });
 
-tcp_tracker.on('http_request_body', function (session, http, data) {
+tcp_tracker.on('http request complete', function (session, http, data) {
     send_to_waiters({
-        event: "http_request_body",
-        key: session.key,
-        data_length: data.length
-    });
-});
-
-tcp_tracker.on('http_request_complete', function (session, http, data) {
-    send_to_waiters({
-        event: "http_request_complete",
+        event: "http request complete",
         key: session.key,
         body_len: http.request.body_len
     });
 });
 
-tcp_tracker.on('http_response', function (session, http) {
+tcp_tracker.on('http response', function (session, http) {
     send_to_waiters({
-        event: "http_response",
+        event: "http response",
         key: session.key,
         status_code: http.response.status_code,
         headers: http.response.headers
     });
 });
 
-tcp_tracker.on('http_response_body', function (session, http, data) {
+tcp_tracker.on('http response body', function (session, http, data) {
     send_to_waiters({
-        event: "http_response_body",
+        event: "http response body",
         key: session.key,
         data_length: data.length
     });
 });
 
-tcp_tracker.on('http_response_complete', function (session, http, data) {
+tcp_tracker.on('http response complete', function (session, http, data) {
     send_to_waiters({
-        event: "http_response_complete",
+        event: "http response complete",
         key: session.key,
         body_len: http.response.body_len
     });
 });
 
-tcp_tracker.on('websocket_upgrade', function (session, http) {
+tcp_tracker.on('websocket upgrade', function (session, http) {
     send_to_waiters({
-        event: "websocket_upgrade",
+        event: "websocket upgrade",
         key: session.key,
         headers: http.response.headers
     });
 });
 
-tcp_tracker.on('websocket_message', function (session, dir, message) {
+tcp_tracker.on('websocket message', function (session, dir, message) {
     // var message_obj = JSON.parse(message), key_parts, new_message;
     // 
     // console.log("considering: " + message);

@@ -4,25 +4,38 @@
     <title>Traffic Graph</title>
     <style>
         body {
-            font-family: "ff-tisa-web-pro-1","ff-tisa-web-pro-2", sans-serif;
-            font-size: 14px;
+            font-family: "Museo Sans", Helvetica, sans-serif;
+            margin: 0;
+            padding: 0;
+        }
+
+        #title_text {
+            position: absolute;
+            top: 4px;
+            left: 6px;
+            font-weight: bold;
+            font-size: 22px;
         }
 
         #sessions {
-            width: 100%;
-            overflow-x: hidden;
-            font-family: Helvetica, sans-serif;
+            position: absolute;
+            top: 40px;
+            bottom: 0px;
+            left: 4px;
+            right: 4px;
+            overflow: hidden;
+            font-family: "Museo Sans", Helvetica, sans-serif;
             font-size: 12px;
         }
 
         .session {
             width: 100%;
-            overflow-x: hidden;
+            word-wrap: break-word;
             border: 1px solid black;
             background: rgb(240,240,240);
             margin-bottom: 5px;
         }
-        
+
         .address {
             width: 300px;
             margin-right: 10px;
@@ -30,27 +43,53 @@
         
         .headers {
             margin-left: 10px;
+            font-size: 12px;
         }
         
         .body_chunk {
             margin-right: 5px;
+        }
 
+        .src_col {
+            width: 150px;
+            min-width: 150px;
+            overflow-x: hidden;
+            vertical-align: top;
+            text-align: left;
+        }
+
+        .req_col {
+            text-align: left;
+            vertical-align: top;
+        }
 
         #log {
             -webkit-border-radius: 5px;
+            -moz-border-radius: 5px;
+            font-size: 14px;
             padding: 5px;
-            width: 90%
-            height: 20px;
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            height: 17px;
             text-align: center;
             background: rgb(128,128,128);
             border: 1px solid black;
+        }
+
+        .url {
+            font-weight: bold;
+        }
+
+        .response_status {
+            font-size: 12px;
+            margin-left: 10px;
             margin-bottom: 5px;
         }
 
-        .src_addr {
-            width: 150px;
-            overflow-x: hidden;
-            vertical-align: top;
+        .request {
+            -webkit-transition-property: background;
+            -webkit-transition-duration: 1s;
         }
 
         .request.start {
@@ -62,7 +101,12 @@
         }
 
         .response {
-            margin-bottom: 5px;
+            -webkit-transition-property: background;
+            -webkit-transition-duration: .8s;
+        }
+
+        .response_code {
+            font-weight: bold;
         }
         
         .response.start {
@@ -76,24 +120,14 @@
         .websocket.start {
             background: rgb(200,240,128);
         }
-        
-        #sessions {
-            overflow-x: hidden;
-            width: 100%;
-        }
-        
-        .session {
-            width: 100%;
-            margin: 5px;
-        }
     </style>
-    <script type="text/javascript" src="http://use.typekit.com/pje2hfb.js"></script>
-    <script type="text/javascript">try{Typekit.load();}catch(e){console.log("TypeKit error: " + e)}</script>
+    <!-- <script type="text/javascript" src="http://use.typekit.com/pje2hfb.js"></script>
+    <script type="text/javascript">try{Typekit.load();}catch(e){console.log("TypeKit error: " + e)}</script> -->
 </head>
 
 <body>
-
-<div id="log">Connecting to WebSocket server...</div>
+<div id="title_text">Live Traffic Stats by Packet</div>
+<div id="log">Checking for WebSocket support...</div>
 
 <div id="sessions"></div>
 
