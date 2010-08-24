@@ -3,6 +3,11 @@
 <head>
     <title>Traffic Graph</title>
     <style>
+        body {
+            font-family: "ff-tisa-web-pro-1","ff-tisa-web-pro-2", sans-serif;
+            font-size: 14px;
+        }
+
         #sessions {
             width: 100%;
             overflow-x: hidden;
@@ -29,21 +34,61 @@
         
         .body_chunk {
             margin-right: 5px;
-        }
-        
+
+
         #log {
-            font-family: Helvetica, sans-serif;
-            font-size: 14px;
             -webkit-border-radius: 5px;
             padding: 5px;
-            width: 200px;
-            height: 17px;
+            width: 90%
+            height: 20px;
             text-align: center;
             background: rgb(128,128,128);
             border: 1px solid black;
             margin-bottom: 5px;
         }
+
+        .src_addr {
+            width: 150px;
+            overflow-x: hidden;
+            vertical-align: top;
+        }
+
+        .request.start {
+            background: rgb(128,240,128);
+        }
+        
+        .request.sent {
+            background: rgb(200,240,128);
+        }
+
+        .response {
+            margin-bottom: 5px;
+        }
+        
+        .response.start {
+            background: rgb(200,128,200);
+        }
+        
+        .response.data {
+            background: rgb(200,240,200);
+        }
+
+        .websocket.start {
+            background: rgb(200,240,128);
+        }
+        
+        #sessions {
+            overflow-x: hidden;
+            width: 100%;
+        }
+        
+        .session {
+            width: 100%;
+            margin: 5px;
+        }
     </style>
+    <script type="text/javascript" src="http://use.typekit.com/pje2hfb.js"></script>
+    <script type="text/javascript">try{Typekit.load();}catch(e){console.log("TypeKit error: " + e)}</script>
 </head>
 
 <body>
