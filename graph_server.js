@@ -227,7 +227,7 @@ server.on('upgrade', upgrade_client);
 server.on('listening', function () {
     console.log("Listening for requests");
 });
-server.listen(80);
+server.listen(81);
 
 pcap_session = node.pcap.createSession(process.argv[2], process.argv[3]);
 tcp_tracker = new node.pcap.TCP_tracker();
