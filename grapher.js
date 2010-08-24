@@ -4,7 +4,7 @@
 var log_elem = document.getElementById('log'), socket,
     dns_cache = {}, sessions = {}, status_lookup;
 
-if (typeof WebSocket === 'object') {
+if (typeof WebSocket !== 'undefined') {
     log_elem.innerText = "Connecting to WebSocket server...";
     socket = new WebSocket("ws://" + window.location.host);
 } else {
