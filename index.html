@@ -3,16 +3,32 @@
 <head>
     <title>Traffic Graph</title>
     <style>
-        .animated_box {
-            position: absolute;
+        #sessions {
+            width: 100%;
+            overflow-x: hidden;
+            font-family: Helvetica, sans-serif;
+            font-size: 12px;
+        }
+
+        .session {
+            width: 100%;
+            overflow-x: hidden;
             border: 1px solid black;
-            background: rgb(128,200,128);
-            -webkit-border-radius: 3px;
-            width: 150px;
-            height: 125px;
-            -webkit-transition-property: left, top;
-            -webkit-transition-duration: 3s;
-            -webkit-transition-timing-function: ease-in;
+            background: rgb(240,240,240);
+            margin-bottom: 5px;
+        }
+        
+        .address {
+            width: 300px;
+            margin-right: 10px;
+        }
+        
+        .headers {
+            margin-left: 10px;
+        }
+        
+        .body_chunk {
+            margin-right: 5px;
         }
         
         #log {
@@ -25,6 +41,7 @@
             text-align: center;
             background: rgb(128,128,128);
             border: 1px solid black;
+            margin-bottom: 5px;
         }
     </style>
 </head>
@@ -32,6 +49,8 @@
 <body>
 
 <div id="log">Connecting to WebSocket server...</div>
+
+<div id="sessions"></div>
 
 <script src="grapher.js"></script>
 </body>

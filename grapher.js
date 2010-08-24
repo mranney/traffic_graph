@@ -32,6 +32,49 @@ function parse_key(key) {
     };
 }
 
+function new_session(obj) {
+    var elem = document.createElement('div'),
+        addrs = parse_key(obj.key);
+
+    sessions[obj.key] = {
+        method: obj.method,
+        url: obj.url,
+        request_headers: obj.headers,
+        elem: elem
+    }
+    
+    elem.className = "session";
+    elem.innerHTML = "<span class=\"address\">" + addrs.src + "</span><span class=\"method\">" + obj.method + " " + obj.url + "</span><br />" +
+        "<div class=\"headers\">" +
+        Object.keys(obj.headers).map(function (k) {
+            return k + ": " + obj.headers[k];
+        }).join("<br />") +
+        "</div>";
+    
+    document.getElementById('sessions').appendChild(elem);
+}
+
+function add_response(obj) {
+    var session = sessions[obj.key];
+    
+    session.elem.innerHTML += "<span class=\"response\">" + obj.status_code + "</span>" +
+        "<div class=\"headers\">" +
+        Object.keys(obj.headers).map(function (k) {
+            return k + ": " + obj.headers[k];
+        }).join("<br />") +
+        "</div>";
+}
+
+function update_response_body(obj) {
+    var session = sessions[obj.key];
+
+    if (session === undefined) {
+        console.log("Couldn't find session in obj " + obj.key);
+    } else {
+        session.elem.innerHTML += "<span class=\"body_chunk\">" + obj.data_length + "B<span>";
+    }
+}
+
 socket.addEventListener('message', function (event) {
 //    console.log("WS message: " + event.data);
     var obj;
@@ -45,16 +88,17 @@ socket.addEventListener('message', function (event) {
     try {
         switch (obj.event) {
         case "http_request":
-            draw_blob(obj.event + "<br />" + parse_key(obj.key).src + "<br />" + obj.method + " " + obj.url + "<br />");
-            // todo - add headers
+            new_session(obj);
             break;
         case "http_request_body":
             break;
         case "http_request_complete":
             break;
         case "http_response":
+            add_response(obj);
             break;
         case "http_response_body":
+            update_response_body(obj);
             break;
         case "http_response_complete":
             break;
